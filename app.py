@@ -9,27 +9,14 @@ app.secret_key = os.environ.get('SECRET_KEY', 'vl-analytics-dev-key')
 
 _DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analytics.db')
 _ADMIN_USER = os.environ.get('ADMIN_USER', 'admin')
-_ADMIN_HASH = bcrypt.hashpw(
-    os.environ.get('ADMIN_PASS', 'admin123').encode('utf-8'),
-    bcrypt.gensalt()
-)
+_ADMIN_PASS = os.environ.get('ADMIN_PASS', 'admin123')
 
 def conectar_db():
     return sqlite3.connect(_DB_PATH)
 
 with conectar_db() as con:
     cur = con.cursor()
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS eventos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            proyecto TEXT NOT NULL,
-            ip TEXT NOT NULL,
-            ruta TEXT NOT NULL,
-            pais TEXT DEFAULT 'Desconocido',
-            ciudad TEXT DEFAULT 'Desconocido',
-            fecha TEXT NOT NULL
-        )
-    ''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS eventos (id INTEGER PRIMARY KEY AUTOINCREMENT, proyecto TEXT NOT NULL, ip TEXT NOT NULL, ruta TEXT NOT NULL, pais TEXT DEFAULT "Desconocido", ciudad TEXT DEFAULT "Desconocido", fecha TEXT NOT NULL)''')
     con.commit()
 
 @app.route('/api/track', methods=['POST'])
@@ -41,14 +28,58 @@ def track():
     fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with conectar_db() as con:
         cur = con.cursor()
-        cur.execute(
-            "INSERT INTO eventos (proyecto, ip, ruta, fecha) VALUES (?, ?, ?, ?)",
-            (proyecto, ip, ruta, fecha)
-        )
+        cur.execute("INSERT INTO eventos (proyecto, ip, ruta, fecha) VALUES (?, ?, ?, ?)", (proyecto, ip, ruta, fecha))
         con.commit()
     return jsonify({'ok': True})
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
-    if request.method == 'POST'
+    if request.method == 'POST':
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+        if username == _ADMIN_USER and password == _ADMIN_PASS:
+            session['admin'] = True
+            return redirect(url_for('panel'))
+        error = 'Credenciales incorrectas'
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('admin', None)
+    return redirect(url_for('login'))
+
+@app.route('/')
+def panel():
+    if not session.get('admin'):
+        return redirect(url_for('login'))
+    with conectar_db() as con:
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM eventos")
+        total_visitas = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(DISTINCT ip) FROM eventos")
+        ips_unicas = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(DISTINCT proyecto) FROM eventos")
+        total_proyectos = cur.fetchone()[0]
+        cur.execute("SELECT proyecto, COUNT(*) as total FROM eventos GROUP BY proyecto ORDER BY total DESC")
+        por_proyecto = cur.fetchall()
+        cur.execute("SELECT * FROM eventos ORDER BY id DESC LIMIT 50")
+        recientes = cur.fetchall()
+    return render_template('panel.html', total_visitas=total_visitas, ips_unicas=ips_unicas, total_proyectos=total_proyectos, por_proyecto=por_proyecto, recientes=recientes)
+
+@app.route('/api/stats')
+def stats():
+    if not session.get('admin'):
+        return jsonify({'error': 'No autorizado'}), 401
+    with conectar_db() as con:
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM eventos")
+        total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(DISTINCT ip) FROM eventos")
+        ips = cur.fetchone()[0]
+        cur.execute("SELECT * FROM eventos ORDER BY id DESC LIMIT 50")
+        recientes = cur.fetchall()
+    return jsonify({'total': total, 'ips_unicas': ips, 'recientes': [list(r) for r in recientes]})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
