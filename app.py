@@ -61,12 +61,26 @@ def panel():
         ips_unicas = cur.fetchone()[0]
         cur.execute("SELECT COUNT(DISTINCT proyecto) FROM eventos")
         total_proyectos = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM eventos WHERE es_bot=0 AND sospechosa=0")
+        total_humanos = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM eventos WHERE es_bot=1")
+        total_bots = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM eventos WHERE sospechosa=1")
+        total_sospechosos = cur.fetchone()[0]
         cur.execute("SELECT proyecto, COUNT(*) as total FROM eventos GROUP BY proyecto ORDER BY total DESC")
         por_proyecto = cur.fetchall()
         cur.execute("SELECT * FROM eventos ORDER BY id DESC LIMIT 50")
         recientes = cur.fetchall()
-    return render_template('panel.html', total_visitas=total_visitas, ips_unicas=ips_unicas, total_proyectos=total_proyectos, por_proyecto=por_proyecto, recientes=recientes)
-
+    return render_template('panel.html',
+        total_visitas=total_visitas,
+        ips_unicas=ips_unicas,
+        total_proyectos=total_proyectos,
+        total_humanos=total_humanos,
+        total_bots=total_bots,
+        total_sospechosos=total_sospechosos,
+        por_proyecto=por_proyecto,
+        recientes=recientes
+    )
 @app.route('/api/stats')
 def stats():
     if not session.get('admin'):
