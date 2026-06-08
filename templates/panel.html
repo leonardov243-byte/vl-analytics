@@ -93,7 +93,7 @@
             </div>
             <table>
                 <tr>
-                    
+
                  <th>ID</th>
                  <th>Proyecto</th>
                  <th>IP</th>
@@ -109,8 +109,10 @@
                     <td>{{ e[1] }}</td>
                     <td>{{ e[2] }}</td>
                     <td>{{ e[3] }}</td>
-                    <td>{{ e[4] }}</td>
-                    <td>{{ e[6] }}</td>
+                   <td>{{ e[4] }}</td>
+                   <td>{% if e[8] and e[8] == 1 %}<span style="color:#ef4444">🤖 Bot</span>{% else %}<span style="color:#4f8ef7">👤 Humano</span>{% endif %}</td>
+                   <td>{{ e[6] }}</td>
+
                 </tr>
                 {% endfor %}
             </table>
