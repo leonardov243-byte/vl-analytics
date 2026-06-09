@@ -11,6 +11,41 @@ _DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'analytics.d
 _ADMIN_USER = os.environ.get('ADMIN_USER', 'admin')
 _ADMIN_PASS = os.environ.get('ADMIN_PASS', 'admin123')
 
+import smtplib
+from email.mime.text import MIMEText
+
+def _consultar_abuseipdb(ip):
+    try:
+        key = os.environ.get('ABUSEIPDB_KEY')
+        if not key:
+            return 0
+        import urllib.request as _ur
+        import json as _j
+        url = f'https://api.abuseipdb.com/api/v2/check?ipAddress={ip}&maxAgeInDays=90'
+        req = _ur.Request(url, headers={'Key': key, 'Accept': 'application/json'})
+        data = _j.loads(_ur.urlopen(req, timeout=3).read())
+        score = data['data']['abuseConfidenceScore']
+        return 1 if score >= 50 else 0
+    except:
+        return 0
+
+def _enviar_alerta(ip, ruta, pais, tipo):
+    try:
+        remitente = os.environ.get('ALERT_EMAIL')
+        password = os.environ.get('ALERT_PASSWORD')
+        destino = os.environ.get('ALERT_DESTINO')
+        if not remitente or not password or not destino:
+            return
+        msg = MIMEText(f'Alerta VL Analytics\n\nTipo: {tipo}\nIP: {ip}\nPais: {pais}\nRuta: {ruta}')
+        msg['Subject'] = f'VL Analytics - {tipo} detectado'
+        msg['From'] = remitente
+        msg['To'] = destino
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(remitente, password)
+            server.sendmail(remitente, destino, msg.as_string())
+    except Exception as e:
+        print(f'Error alerta: {e}')
+
 def conectar_db():
     return sqlite3.connect(_DB_PATH)
 
@@ -28,9 +63,16 @@ def track():
     fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with conectar_db() as con:
         cur = con.cursor()
-        cur.execute("INSERT INTO eventos (proyecto, ip, ruta, fecha) VALUES (?, ?, ?, ?)", (proyecto, ip, ruta, fecha))
-        con.commit()
-    return jsonify({'ok': True})
+        maliciosa = _consultar_abuseipdb(ip)
+        cur.execute("INSERT INTO eventos (proyecto, ip, ruta, pais, ciudad, fecha, user_agent, es_bot, sospechosa, maliciosa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (proyecto, ip, ruta, pais, ciudad, fecha, ua, bot, 0, maliciosa))
+   maliciosa = _consultar_abuseipdb(ip)
+        if bot == 1 or maliciosa == 1:
+            tipo = 'Bot' if bot == 1 else 'IP Maliciosa'
+            import threading as _t
+            _t.Thread(target=_enviar_alerta, args=(ip, ruta, pais, tipo), daemon=True).start()
+            import threading as _t
+            _t.Thread(target=_enviar_alerta, args=(ip, ruta, pais, 'Bot'), daemon=True).start()
+        return jsonify({'ok': True})
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
