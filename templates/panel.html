@@ -100,7 +100,7 @@
             <div class="table-header">
                 <h3>Eventos Recientes</h3>
             </div>
-            <table>
+            <table id="tabla-eventos">
                 <tr>
                     <th>ID</th>
                     <th>Proyecto</th>
@@ -110,17 +110,7 @@
                     <th>Tipo</th>
                     <th>Fecha</th>
                 </tr>
-                {% for e in recientes %}
-                <tr>
-                    <td><span class="tag">#{{ e[0] }}</span></td>
-                    <td>{{ e[1] }}</td>
-                    <td>{{ e[2] }}</td>
-                    <td>{{ e[3] }}</td>
-                    <td>{{ e[4] }}</td>
-                    <td>{% if e[8] and e[8] == 1 %}<span style="color:#ef4444">🤖 Bot</span>{% elif e[9] and e[9] == 1 %}<span style="color:#f97316">⚠️ Sospechoso</span>{% else %}<span style="color:#4f8ef7">👤 Humano</span>{% endif %}</td>
-                    <td>{{ e[6] }}</td>
-                </tr>
-                {% endfor %}
+            <tbody id="tbody-eventos"></tbody>
             </table>
         </div>
     </div>
@@ -158,5 +148,21 @@
             });
         });
     </script>
+<script>
+fetch('/api/eventos').then(r=>r.json()).then(data=>{
+  const tbody = document.querySelector('#tabla-eventos tbody') || document.querySelector('table tbody');
+  if(!tbody) return;
+  tbody.innerHTML = data.map(e=>`
+    <tr>
+      <td>${e.id}</td>
+      <td>${e.proyecto}</td>
+      <td>${e.ip}</td>
+      <td>${e.ruta}</td>
+      <td>${e.pais}</td>
+      <td style="color:${e.tipo==='Bot'?'#ef4444':e.tipo==='Maliciosa'?'#ff0000':e.tipo==='Sospechosa'?'#f97316':'#4f8ef7'}">${e.tipo}</td>
+      <td>${e.fecha}</td>
+    </tr>`).join('');
+});
+</script>
 </body>
 </html>

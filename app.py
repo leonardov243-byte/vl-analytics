@@ -47,7 +47,7 @@ def _init_db():
 
 def _es_bot(ua):
     if not ua:
-        return True
+        return False
     bots = ['bot','crawler','spider','scraper','python','curl','wget',
             'java','ruby','perl','php','go-http']
     return any(b in ua.lower() for b in bots)
@@ -136,7 +136,7 @@ def track():
     proyecto = data.get('proyecto', 'desconocido')
     ip       = data.get('ip', request.remote_addr)
     ruta     = data.get('ruta', '/')
-    ua       = data.get('user_agent', request.headers.get('User-Agent', ''))
+    ua       = data.get('user_agent', request.headers.get('X-Real-UA', request.headers.get('User-Agent', '')))
     fecha    = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     pais, ciudad = _get_pais(ip)
     bot      = 1 if _es_bot(ua) else 0
@@ -157,6 +157,12 @@ def track():
         _t.Thread(target=_enviar_alerta, args=(ip, ruta, pais, tipo), daemon=True).start()
 
     return jsonify({'ok': True})
+
+@app.route('/api/eventos')
+def eventos():
+    with conectar_db() as con:
+        rows = con.execute('SELECT id, proyecto, ip, ruta, pais, CASE WHEN maliciosa=1 THEN "Maliciosa" WHEN es_bot=1 THEN "Bot" WHEN sospechosa=1 THEN "Sospechosa" ELSE "Humano" END, fecha FROM eventos ORDER BY id DESC LIMIT 50').fetchall()
+    return jsonify([dict(zip(['id','proyecto','ip','ruta','pais','tipo','fecha'],r)) for r in rows])
 
 @app.route('/api/stats')
 def stats():
