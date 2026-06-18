@@ -1,3 +1,4 @@
+<img width="800" height="450" alt="ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/66c03165-3b62-4b03-b29e-db75109d963a" />
 # 📊 VL Analytics — Panel de Analíticas en Tiempo Real
 
 Panel de analíticas propio para monitorear tráfico web en tiempo real. Recibe datos de proyectos externos conectados, analiza cada visita, detecta bots y amenazas, y genera alertas automáticas.
