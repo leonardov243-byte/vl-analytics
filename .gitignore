@@ -1,3 +1,5 @@
-settoken.py
-analytics.db
-nohup.out
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
