@@ -194,3 +194,9 @@ _init_db()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
+@app.route('/logout')
+def logout():
+    from flask import Response
+    html = """<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>VL Analytics - Sesion Cerrada</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a0a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}.container{text-align:center;max-width:600px;padding:60px 40px;border:1px solid #1e1e1e;border-radius:12px;background:#111}.logo{font-size:13px;letter-spacing:4px;color:#555;margin-bottom:40px;text-transform:uppercase}.logo span{color:#4a9eff}h1{font-size:22px;font-weight:400;color:#ccc;margin-bottom:20px}p{font-size:14px;color:#666;line-height:1.8;margin-bottom:16px}.accent{color:#4a9eff}hr{border:none;border-top:1px solid #1e1e1e;margin:30px 0}.btn{display:inline-block;margin-top:10px;padding:10px 28px;border:1px solid #333;border-radius:6px;color:#888;text-decoration:none;font-size:12px;letter-spacing:2px;text-transform:uppercase}.btn:hover{border-color:#4a9eff;color:#4a9eff}</style></head><body><div class="container"><div class="logo">VL <span>ANALYTICS</span></div><h1>Sesion cerrada correctamente.</h1><hr><p><span class="accent">VL Analytics</span> es una plataforma de inteligencia de trafico web disenada para integrarse en ecosistemas de gestion empresarial completos.</p><p>Analiza visitas en tiempo real, clasifica el trafico entre humanos y bots, verifica reputacion de IPs contra bases de datos globales de amenazas, y genera alertas automaticas ante actividad maliciosa.</p><p>Este sistema forma parte del ecosistema <span class="accent">Corporaciones VL</span>, desarrollado y desplegado sobre infraestructura AWS EC2.</p><hr><a href="/" class="btn">Volver al panel</a></div></body></html>"""
+    return Response(html, mimetype='text/html')
